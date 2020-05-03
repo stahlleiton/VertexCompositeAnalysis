@@ -30,6 +30,8 @@
 #include "DataFormats/VertexReco/interface/VertexFwd.h"
 #include "DataFormats/TrackReco/interface/Track.h"
 #include "DataFormats/TrackReco/interface/TrackFwd.h"
+#include "DataFormats/TrackReco/interface/DeDxData.h"
+#include "DataFormats/TrackingRecHit/interface/TrackingRecHit.h"
 #include "DataFormats/PatCandidates/interface/Electron.h"
 #include "DataFormats/PatCandidates/interface/Muon.h"
 #include "DataFormats/PatCandidates/interface/Tau.h"
@@ -111,7 +113,7 @@ struct ParticleComparator : ParticleDaughterComparator {
 class ParticleDaughter {
  public:
   ParticleDaughter();
-  ParticleDaughter(const edm::ParameterSet& pSet, edm::ConsumesCollector&& iC);
+  ParticleDaughter(const edm::ParameterSet& pSet, const edm::ParameterSet& config, edm::ConsumesCollector&& iC);
   ~ParticleDaughter();
 
   const int& pdgId() const { return pdgId_; }
@@ -123,7 +125,7 @@ class ParticleDaughter {
   template <class T>
   void addParticles(const edm::Event& event, const edm::EDGetTokenT<std::vector<T> >& token, const reco::Vertex& vertex, const bool embedInfo=false);
   void addParticles(const edm::Event& event);
-  void fillInfo(const edm::ParameterSet& pSet, edm::ConsumesCollector& iC);
+  void fillInfo(const edm::ParameterSet& pSet, const edm::ParameterSet& config, edm::ConsumesCollector& iC);
   void clear();
 
  private:
@@ -139,10 +141,17 @@ class ParticleDaughter {
   int pdgId_;
   int charge_;
   double mass_;
+  bool usePID_;
   std::string selection_;
   std::string finalSelection_;
   edm::EDGetTokenT<pat::GenericParticleCollection> source_;
   pat::GenericParticleCollection particles_;
+
+  // track qualities
+  edm::EDGetTokenT<std::vector<float>> mvaTrackRecoSrc_;
+
+  // PID
+  edm::EDGetTokenT<edm::ValueMap<reco::DeDxData> > token_dedx_;
 };
 
 

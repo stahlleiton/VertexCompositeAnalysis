@@ -22,7 +22,7 @@
 // constructor
 ParticleProducer::ParticleProducer(const edm::ParameterSet& iConfig) :
   fitter_(iConfig, consumesCollector()),
-  daughter_(iConfig, consumesCollector()) 
+  daughter_(iConfig, iConfig, consumesCollector()) 
 {
   produces<pat::GenericParticleCollection>();
 }

@@ -21,9 +21,10 @@ ParticleFitter::ParticleFitter(const edm::ParameterSet& theParameters, edm::Cons
   const auto daughterVPset = theParameters.getParameter<std::vector<edm::ParameterSet> >("daughterInfo");
   for (const auto& pSet : daughterVPset) {
     ParticleDaughter daughter;
-    daughter.fillInfo(pSet, iC);
+    daughter.fillInfo(pSet, theParameters, iC);
     daughters_.push_back(daughter);
   }
+
   // get input tags
   token_beamSpot_ = iC.consumes<reco::BeamSpot>(edm::InputTag("offlineBeamSpot"));
   token_vertices_ = iC.consumes<reco::VertexCollection>(theParameters.getParameter<edm::InputTag>("primaryVertices"));
@@ -34,6 +35,7 @@ ParticleFitter::ParticleFitter(const edm::ParameterSet& theParameters, edm::Cons
   token_tracks_ = iC.consumes<reco::TrackCollection>(theParameters.getParameter<edm::InputTag>("tracks"));
   token_pfParticles_ = iC.consumes<reco::PFCandidateCollection>(theParameters.getParameter<edm::InputTag>("pfParticles"));
   token_jets_ = iC.consumes<pat::JetCollection>(theParameters.getParameter<edm::InputTag>("jets"));
+
   // initialize attributes
   fitDone_ = false;
   vertex_ = reco::Vertex();
@@ -50,12 +52,16 @@ ParticleFitter::~ParticleFitter() {
 void ParticleFitter::fitAll(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
   // fill daughters particles
   fillDaughters(iEvent);
+  //std::cout << "daughters have been filled" << std::endl;
   // create candidates
   makeCandidates();
+  //std::cout << "candidates have beeen made" << std::endl;
   // fit candidates
   fitCandidates(iSetup);
+  //std::cout << "candidates have beeen fitted" << std::endl;
   // add extra information and make final selection
   selectCandidates();
+  //std::cout << "post selectoins for candidates have beeen done" << std::endl;
 };
 
 
@@ -130,9 +136,11 @@ void ParticleFitter::makeCandidates() {
     auto charge = cand.charge();
     auto p4 = cand.p4();
     ParticleDaughterSet daughters;
+    float tkPtSum = 0;
     for (const auto& daughter : combination) {
       charge += daughter->charge();
       p4 += daughter->p4();
+      tkPtSum += daughter->pt();
       daughters.insert(*daughter);
     }
     // check if all daughters are unique (are in set)
@@ -140,6 +148,17 @@ void ParticleFitter::makeCandidates() {
       cand.setCharge(charge);
       cand.setP4(p4);
       cand.setPdgId(pdgId_);
+      cand.addUserFloat("tkPtSum", tkPtSum);
+
+      if (nDaughters == 2) {
+         auto it2 = daughters.cbegin();
+         auto it1 = it2++;
+         
+         const float tkEtaDiff = std::fabs(it2->eta() - it1->eta());
+         cand.addUserFloat("tkEtaDiff", tkEtaDiff);
+
+      }
+
       if (preSelection_(cand)) {
         pat::GenericParticleCollection daughterColl(daughters.begin(), daughters.end());
         cand.addUserData<pat::GenericParticleCollection>("daughters", daughterColl);
@@ -277,6 +296,8 @@ void ParticleFitter::selectCandidates() {
     cand.addUserFloat("rVtxSig", (rVtxMag/sigmaRvtxMag));
     cand.addUserFloat("angle3D", angle3D);
     cand.addUserFloat("angle2D", angle2D);
+    cand.addUserFloat("collinearity3D", std::cos(angle3D));
+    cand.addUserFloat("collinearity2D", std::cos(angle2D));
     // select final candidates
     if (finalSelection_(cand)) {
       candidates.push_back(cand);
@@ -299,10 +320,10 @@ ParticleDaughter::ParticleDaughter()
 };
 
 
-ParticleDaughter::ParticleDaughter(const edm::ParameterSet& pSet, edm::ConsumesCollector&& iC) :
+ParticleDaughter::ParticleDaughter(const edm::ParameterSet& pSet, const edm::ParameterSet& config, edm::ConsumesCollector&& iC) :
   ParticleDaughter()
 {
-  fillInfo(pSet, iC);
+  fillInfo(pSet, config, iC);
 };
 
 
@@ -314,7 +335,7 @@ void ParticleDaughter::clear() {
 };
 
 
-void ParticleDaughter::fillInfo(const edm::ParameterSet& pSet, edm::ConsumesCollector& iC) { 
+void ParticleDaughter::fillInfo(const edm::ParameterSet& pSet, const edm::ParameterSet& config, edm::ConsumesCollector& iC) { 
   if (pSet.existsAs<int>("pdgId")) {
     pdgId_ = pSet.getParameter<int>("pdgId");
   }
@@ -336,6 +357,23 @@ void ParticleDaughter::fillInfo(const edm::ParameterSet& pSet, edm::ConsumesColl
   if (pSet.existsAs<edm::InputTag>("source")) {
     source_ = iC.consumes<pat::GenericParticleCollection>(pSet.getParameter<edm::InputTag>("source"));
   }
+  if (pSet.existsAs<bool>("usePID")) {
+    usePID_ = pSet.getParameter<bool>("usePID");
+  } else {
+    usePID_ =false;
+  }
+  if (pSet.existsAs<edm::InputTag>("dedxHarmonic2")) {
+    token_dedx_ = iC.consumes<edm::ValueMap<reco::DeDxData>>(pSet.getParameter<edm::InputTag>("dedxHarmonic2"));
+  } 
+  else if (config.existsAs<edm::InputTag>("dedxHarmonic2")) {
+    token_dedx_ = iC.consumes<edm::ValueMap<reco::DeDxData>>(config.getParameter<edm::InputTag>("dedxHarmonic2"));
+  }
+  if (pSet.existsAs<edm::InputTag>("mvaTrackRecoSrc")) {
+     mvaTrackRecoSrc_ = iC.consumes<std::vector<float>>(pSet.getParameter<edm::InputTag>("mvaTrackRecoSrc"));
+  }
+  else if (config.existsAs<edm::InputTag>("mvaTrackRecoSrc")) {
+     mvaTrackRecoSrc_ = iC.consumes<std::vector<float>>(config.getParameter<edm::InputTag>("mvaTrackRecoSrc"));
+  }
 };
 
 
@@ -343,6 +381,13 @@ template <class T>
 void ParticleDaughter::addParticles(const edm::Event& event, const edm::EDGetTokenT<std::vector<T> >& token, const reco::Vertex& vertex, const bool embedInfo) {
   edm::Handle<std::vector<T> > handle;
   event.getByToken(token, handle);
+
+  edm::Handle<std::vector<float>> mvaTrackRecoOutputHandle;
+  if (!mvaTrackRecoSrc_.isUninitialized()) event.getByToken(mvaTrackRecoSrc_, mvaTrackRecoOutputHandle);
+
+  edm::Handle<edm::ValueMap<reco::DeDxData> > dEdxHandle;
+  if (!token_dedx_.isUninitialized()) event.getByToken(token_dedx_, dEdxHandle);
+
   StringCutObjectSelector<T, true> selection(selection_);
   StringCutObjectSelector<pat::GenericParticle, true> finalSelection(finalSelection_);
   if (handle.isValid()) {
@@ -368,6 +413,27 @@ void ParticleDaughter::addParticles(const edm::Event& event, const edm::EDGetTok
         cand.addUserFloat("dxy", dxy);
         cand.addUserFloat("dzSig", dz/dzerror);
         cand.addUserFloat("dxySig", dxy/dxyerror);
+
+        if (mvaTrackRecoOutputHandle.isValid()) {
+          const float mvaTrackReco = (*mvaTrackRecoOutputHandle)[i];
+          if(trk.algo() == 6){
+            if(mvaTrackReco < 0.98) continue;
+            //std::cout<<"mvaTrackReco : "<<mvaTrackReco<<std::endl;
+          }
+        }
+
+        if (dEdxHandle.isValid()) {
+          const edm::ValueMap<reco::DeDxData> dEdxTrack = *dEdxHandle.product();
+          const float dedx_value = dEdxTrack[cand.track()].dEdx();
+          cand.addUserFloat("dedx", dedx_value);
+          // do PID with dedx
+          if (usePID_) {
+             // not complete
+             cand.addUserInt("isProton", 0);
+             cand.addUserInt("isKaon", 0);
+             cand.addUserInt("isPion", 0);
+          }
+        } 
       }
       else if (cand.charge()!=0) continue; // ignore if charged particle has no track
       cand.addUserFloat("width", cand.mass()*1.e-6);
