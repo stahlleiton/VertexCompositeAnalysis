@@ -1,6 +1,6 @@
 import FWCore.ParameterSet.Config as cms
 from Configuration.StandardSequences.Eras import eras
-process = cms.Process('ANASKIM', eras.Run3_2023_UPC)
+process = cms.Process('ANASKIM', eras.Run3_2024_UPC)
 
 process.load('Configuration.StandardSequences.Services_cff')
 process.load('Configuration.StandardSequences.GeometryRecoDB_cff')
@@ -14,18 +14,19 @@ process.options = cms.untracked.PSet(wantSummary = cms.untracked.bool(True))
 
 # Define the input source
 process.source = cms.Source("PoolSource",
-    fileNames = cms.untracked.vstring("root://cms-xrd-global.cern.ch//store/hidata/HIRun2023A/HIForward0/AOD/PromptReco-v2/000/375/202/00000/76e6c739-a417-4ea2-8176-6b2fbec3c7c8.root"),
+    fileNames = cms.untracked.vstring("root://cms-xrd-global.cern.ch///store/hidata/HIRun2024A/HIForward0/MINIAOD/PromptReco-v1/000/388/004/00000/1ab0806b-536e-48f3-99a5-8879bb42f097.root"),
 )
 process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(-1))
 
 # Set the global tag
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
-process.GlobalTag.globaltag = cms.string('132X_dataRun3_Prompt_v7')
+process.GlobalTag.globaltag = cms.string('141X_dataRun3_Prompt_v3')
 
 # Set ZDC information
 process.load('VertexCompositeAnalysis.VertexCompositeProducer.QWZDC2018Producer_cfi')
 process.load('VertexCompositeAnalysis.VertexCompositeProducer.QWZDC2018RecHit_cfi')
 process.zdcdigi.SOI = cms.untracked.int32(2)
+'''
 process.es_pool = cms.ESSource("PoolDBESSource",
     timetype = cms.string('runnumber'),
     toGet = cms.VPSet(cms.PSet(record = cms.string("HcalElectronicsMapRcd"), tag = cms.string("HcalElectronicsMap_2021_v2.0_data"))),
@@ -36,7 +37,7 @@ process.es_prefer = cms.ESPrefer('HcalTextCalibrations', 'es_ascii')
 process.es_ascii = cms.ESSource('HcalTextCalibrations',
     input = cms.VPSet(cms.PSet(object = cms.string('ElectronicsMap'), file = cms.FileInPath("VertexCompositeAnalysis/VertexCompositeProducer/data/emap_2023_newZDC_v3.txt")))
 )
-
+'''
 # Add the Particle producer
 from VertexCompositeAnalysis.VertexCompositeProducer.generalParticles_cff import generalParticles
 
@@ -53,13 +54,14 @@ process.diMu = generalParticles.clone(
         cms.PSet(pdgId = cms.uint32(13), charge = cms.int32(+1), selection = muonSelection),
         cms.PSet(pdgId = cms.uint32(13), charge = cms.int32(-1), selection = muonSelection),
     ]),
-    muons = cms.InputTag('patMuons')
+    #muons = cms.InputTag('patMuons')
+    muons = cms.InputTag('slimmedMuons')
 )
 process.oneDiMu = cms.EDFilter("CandViewCountFilter", src = cms.InputTag("diMu"), minNumber = cms.uint32(1))
 
 # Add muons
-from VertexCompositeAnalysis.VertexCompositeProducer.PATAlgos_cff import doPATMuons
-doPATMuons(process)
+#from VertexCompositeAnalysis.VertexCompositeProducer.PATAlgos_cff import doPATMuons
+#doPATMuons(process)
 
 from RecoMuon.MuonIdentification.calomuons_cfi import calomuons
 process.mergedMuons = cms.EDProducer("CaloMuonMerger",
@@ -114,7 +116,9 @@ process.hltFilter.HLTPaths = [
 # Add PbPb collision event selection
 process.load('VertexCompositeAnalysis.VertexCompositeProducer.collisionEventSelection_cff')
 process.load('VertexCompositeAnalysis.VertexCompositeProducer.hfCoincFilter_cff')
+#process.primaryVertexFilter.src = cms.InputTag("offlineSlimmedPrimaryVertices")
 process.colEvtSel = cms.Sequence(process.hfCoincFilter2Th4 * process.primaryVertexFilter)
+
 
 # Define the event selection sequence
 process.eventFilter_HM = cms.Sequence(
@@ -123,9 +127,20 @@ process.eventFilter_HM = cms.Sequence(
 )
 process.eventFilter_HM_step = cms.Path( process.eventFilter_HM )
 
-# Define the analysis steps
-process.diMu_rereco_step = cms.Path(process.eventFilter_HM * process.mergedMuons * process.patMuonSequence *  process.diMu * process.oneDiMu)
+def replacePrimaryVertices(process, new_tag):
+    for module in process.producers_():
+        if hasattr(process, module) and hasattr(getattr(process, module), 'primaryVertices'):
+            getattr(process, module).primaryVertices = cms.InputTag(new_tag)
 
+# Replace with new tag
+#replacePrimaryVertices(process, "offlineSlimmedPrimaryVertices")
+
+# Define the analysis steps
+process.diMu_rereco_step = cms.Path(process.eventFilter_HM * process.mergedMuons *  process.diMu * process.oneDiMu)
+'''
+from VertexCompositeAnalysis.VertexCompositeProducer.PATAlgos_cff import changeToMiniAOD
+changeToMiniAOD(process)
+'''
 # Add the VertexComposite tree
 from VertexCompositeAnalysis.VertexCompositeAnalyzer.particle_tree_cff import particleAna
 process.diMuAna = particleAna.clone(
@@ -184,6 +199,9 @@ process.diMuAna = particleAna.clone(
 process.TFileService = cms.Service("TFileService", fileName = cms.string('diMu_ana.root'))
 process.p = cms.EndPath(process.diMuAna)
 
+from VertexCompositeAnalysis.VertexCompositeProducer.PATAlgos_cff import changeToMiniAOD
+#changeToMiniAOD(process)
+
 # Define the process schedule
 process.schedule = cms.Schedule(
     process.eventFilter_HM_step,
@@ -233,3 +251,6 @@ for P in eventFilterPaths:
 from Configuration.Applications.ConfigBuilder import MassReplaceInputTag
 process = MassReplaceInputTag(process, "muons", "mergedMuons")
 process.mergedMuons.muons = cms.InputTag("muons")
+changeToMiniAOD(process)
+with open("temp_config_dump.txt", "w") as f:
+    f.write(process.dumpPython())

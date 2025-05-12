@@ -22,7 +22,6 @@
 #include "RecoVertex/PrimaryVertexProducer/interface/DAClusterizerInZ_vect.h"
 #include "RecoVertex/PrimaryVertexProducer/interface/DAClusterizerInZT_vect.h"
 #include "RecoVertex/PrimaryVertexProducer/interface/GapClusterizerInZ.h"
-#include "RecoVertex/PrimaryVertexProducer/interface/DAClusterizerInZ.h"
 #include "RecoVertex/PrimaryVertexProducer/interface/VertexHigherPtSquared.h"
 #include "RecoVertex/KalmanVertexFit/interface/KalmanVertexFitter.h"
 #include "RecoVertex/AdaptiveVertexFit/interface/AdaptiveVertexFitter.h"
@@ -69,8 +68,6 @@ private:
       const auto& algo = clusterizer.getParameter<std::string>("algorithm");
       if (algo == "gap")
         r.clusterizer.reset(new GapClusterizerInZ(clusterizer));
-      else if (algo == "DA")
-        r.clusterizer.reset(new DAClusterizerInZ(clusterizer));
       else if (algo == "DA_vect")
         r.clusterizer.reset(new DAClusterizerInZ_vect(clusterizer));
       else if (algo == "DA2D_vect")

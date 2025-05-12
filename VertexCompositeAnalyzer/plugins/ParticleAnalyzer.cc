@@ -530,7 +530,11 @@ ParticleAnalyzer::getTriggerData(const edm::Event& iEvent, const edm::EventSetup
           for (const auto& filterIdx : filterIdxFound)
           {
             const auto& filterName = triggerEvent->filterLabel(filterIdx);
-            if (hltConfig.moduleIndex(trgIdx, filterName)!=hltConfig.size(trgIdx)) { trgFilterIdxFound.emplace_back(trgIdx, filterIdx); }
+            if (hltConfig.moduleIndex(static_cast<unsigned int>(trgIdx), std::string(filterName)) != hltConfig.size(trgIdx)) {
+    		trgFilterIdxFound.emplace_back(trgIdx, filterIdx);
+	    }
+
+	    //if (hltConfig.moduleIndex(trgIdx, filterName)!=hltConfig.size(trgIdx)) { trgFilterIdxFound.emplace_back(trgIdx, filterIdx); }
           }
         }
         if (trgFilterIdxFound.empty()) continue;
@@ -625,11 +629,13 @@ ParticleAnalyzer::getTriggerData(const edm::Event& iEvent, const edm::EventSetup
         // add trigger information to object
         auto& obj = triggerObjectMap_.at(col).at(filterKeys[iKey]);
         obj.addFilterId(filterIds[iKey]);
-        obj.addFilterLabel(filterName);
-        filterObjects[col].emplace_back(filterKeys[iKey]);
+        //obj.addFilterLabel(filterName);
+        obj.addFilterLabel(std::string(filterName));
+	filterObjects[col].emplace_back(filterKeys[iKey]);
       }
       // store trigger information
-      triggerData_[iTrg].setInfo(triggerIndex, filterIndex, triggerName, filterName, minN, validPrescale, hltPrescale, l1Prescale, bit, filterObjects);
+      //triggerData_[iTrg].setInfo(triggerIndex, filterIndex, triggerName, filterName, minN, validPrescale, hltPrescale, l1Prescale, bit, filterObjects);
+      triggerData_[iTrg].setInfo(triggerIndex, filterIndex, std::string(triggerName), std::string(filterName), minN, validPrescale, hltPrescale, l1Prescale, bit, filterObjects);
       // store lumi information per trigger
       const auto& lumiInfo = iEvent.getHandle(tok_lumiInfo);
       if (!isMC_ && lumiInfo.isValid())
