@@ -852,9 +852,10 @@ void ParticleDaughter::fillInfo(const edm::ParameterSet& pSet, const edm::Parame
   if (mvaSet.existsAs<edm::InputTag>("mva")) {
     token_mva_ = iC.consumes<std::vector<float> >(mvaSet.getParameter<edm::InputTag>("mva"));
   }
-  if (config.existsAs<std::vector<std::string> >("dEdxInputs")) {
-    for (const auto& input : config.getParameter<std::vector<std::string> >("dEdxInputs")){
-      tokens_dedx_.insert(std::make_pair(input, iC.consumes<edm::ValueMap<reco::DeDxData> >(edm::InputTag(input))));
+  if (config.existsAs<std::vector<edm::InputTag> >("dEdxInputs")) {
+    for (const auto& input : config.getParameter<std::vector<edm::InputTag> >("dEdxInputs")){
+      const auto& label = input.instance()!="" ? input.instance() : input.label();
+      tokens_dedx_.insert(std::make_pair(label, iC.consumes<edm::ValueMap<reco::DeDxData> >(input)));
     }
   }
   if (source_id_==Token::Muon && (pSet.existsAs<bool>("propToMuon") && pSet.getParameter<bool>("propToMuon"))) {

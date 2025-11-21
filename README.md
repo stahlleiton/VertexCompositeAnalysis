@@ -1,19 +1,18 @@
 # VertexCompositeAnalysis
 
-Example of setting up and running gamma+gamma to dimuon tree
+Example of setting up and running gamma+gamma to dikaon tree
 
-cmsrel CMSSW_15_0_0
+cmsrel CMSSW_15_1_0_patch3
 
-cd CMSSW_15_0_0/src
+cd CMSSW_15_1_0_patch3/src
 
 cmsenv
 
-git clone -b ParticleFitter_15_0_X https://github.com/davidlw/VertexCompositeAnalysis
-
-cd VertexCompositeAnalysis
+git cms-rebase-topic stahlleiton:ParticleFitter_15_1_X
+git clone -b ParticleFitter_15_1_X git@github.com:stahlleiton/VertexCompositeAnalysis.git
 
 scram b -j8
 
-cd VertexCompositeProducer/test
+cd VertexCompositeAnalysis/VertexCompositeProducer/test
 
-cmsRun PbPbSkimAndTree2024_DiKa_ParticleAnalyzer_cfg.py
+cmsRun VCTree_PbPb2025_UPCDiKa_UPCReco_cfg.py

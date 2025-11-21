@@ -166,7 +166,13 @@ def changeToMiniAOD(process):
         process.load('VertexCompositeAnalysis.VertexCompositeProducer.unpackedMuons_cfi')
         process.patMuons = process.unpackedMuons.clone()
 
+    if hasattr(process, "primaryVertexFilter"):
+        process.primaryVertexFilter.cut = "!isFake && abs(z) <= 25 && position.Rho <= 2"
+
     from Configuration.Applications.ConfigBuilder import MassReplaceInputTag
     process = MassReplaceInputTag(process,"offlinePrimaryVertices","unpackedTracksAndVertices")
     process = MassReplaceInputTag(process,"generalTracks","unpackedTracksAndVertices")
+    for dedx in ['dedxStripLikelihood','dedxPixelLikelihood','dedxAllLikelihood']:
+        process = MassReplaceInputTag(process,dedx,"unpackedTracksAndVertices:"+dedx)
+    process = MassReplaceInputTag(process,"particleFlow","packedPFCandidates")
     process = MassReplaceInputTag(process,"genParticles","prunedGenParticles")

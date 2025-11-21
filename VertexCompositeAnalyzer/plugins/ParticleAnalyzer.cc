@@ -20,7 +20,7 @@
 #include "FWCore/Common/interface/TriggerNames.h"
 #include "FWCore/ParameterSet/interface/Registry.h"
 
-#include "DataFormats/HcalDigi/interface/HcalDigiCollections.h"
+#include "DataFormats/HcalRecHit/interface/HcalRecHitCollections.h"
 #include "DataFormats/BeamSpot/interface/BeamSpot.h"
 #include "DataFormats/VertexReco/interface/Vertex.h"
 #include "DataFormats/TrackReco/interface/Track.h"
@@ -54,7 +54,6 @@
 #include "TrackingTools/TransientTrack/interface/TransientTrack.h"
 #include "TrackingTools/IPTools/interface/IPTools.h"
 #include "TrackingTools/PatternTools/interface/trackingParametersAtClosestApproachToBeamSpot.h"
-#include "VertexCompositeAnalysis/VertexCompositeProducer/interface/QWZDC2018Helper.h"
 #include "HepPDT/ParticleID.hh"
 
 #include "VertexCompositeAnalysis/VertexCompositeProducer/interface/ParticleFitter.h"
@@ -180,7 +179,7 @@ private:
   std::vector< edm::EDGetTokenT<LumiInfo> > tok_triggerLumiInfo_;
   const edm::EDGetTokenT<edm::ValueMap<int> > tok_nTracksVMap_;
   const edm::EDGetTokenT<reco::TrackCollection> tok_trackSrc_;
-  const edm::EDGetTokenT<QIE10DigiCollection> tok_zdcDigiSrc_;
+  const edm::EDGetTokenT<edm::SortedCollection<ZDCRecHit> > tok_zdcRecHitSrc_;
   const edm::EDGetTokenT<reco::PFCandidateCollection> tok_pfCandSrc_;
   const edm::EDGetTokenT<CaloTowerCollection> tok_towerSrc_;
   const edm::EDGetTokenT<TrackingParticleCollection> tok_simParticle_;
@@ -196,7 +195,7 @@ private:
   std::map<std::string, bool> addInfo_;
   std::set<Token> sourceId_;
   std::set<UInt_t> genPdgId_;
-  std::vector<std::string> dedxInfo_;
+  std::vector<edm::InputTag> dedxInfo_;
 
   HLTPrescaleProvider hltPrescaleProvider_;
   std::vector<std::vector<double> > l1PrescaleTable_;
@@ -253,7 +252,7 @@ ParticleAnalyzer::ParticleAnalyzer(const edm::ParameterSet& iConfig) :
   tok_lumiRecord_(consumes<OnlineLuminosityRecord>(iConfig.getUntrackedParameter<edm::InputTag>("lumiRecord", edm::InputTag("onlineMetaDataDigis")))),
   tok_nTracksVMap_(consumes<edm::ValueMap<int> >(iConfig.getUntrackedParameter<edm::InputTag>("nTracksVMap", edm::InputTag()))),
   tok_trackSrc_(consumes<reco::TrackCollection>(iConfig.getUntrackedParameter<edm::InputTag>("recoTracks", edm::InputTag("generalTracks")))),
-  tok_zdcDigiSrc_(consumes<QIE10DigiCollection>(iConfig.getUntrackedParameter<edm::InputTag>("zdcDigis", edm::InputTag("hcalDigis:ZDC")))),
+  tok_zdcRecHitSrc_(consumes<edm::SortedCollection<ZDCRecHit> >(iConfig.getUntrackedParameter<edm::InputTag>("zdcRecHits", edm::InputTag("zdcreco")))),
   tok_pfCandSrc_(consumes<reco::PFCandidateCollection>(iConfig.getUntrackedParameter<edm::InputTag>("pfCandidates", edm::InputTag("particleFlow")))),
   tok_towerSrc_(consumes<CaloTowerCollection>(iConfig.getUntrackedParameter<edm::InputTag>("towers", edm::InputTag("towerMaker")))),
   tok_simParticle_(consumes<TrackingParticleCollection>(iConfig.getUntrackedParameter<edm::InputTag>("towers", edm::InputTag("mix:MergedTrackTruth")))),
@@ -724,33 +723,14 @@ ParticleAnalyzer::fillEventInfo(const edm::Event& iEvent)
   }
 
   // fill ZDC information
-  const auto& zdcDigis = iEvent.getHandle(tok_zdcDigiSrc_);
-  if (zdcDigis.isValid())
+  const auto& zdcRecHits = iEvent.getHandle(tok_zdcRecHitSrc_);
+  if (zdcRecHits.isValid())
   {
     float ZDCMinus(-1), ZDCPlus(-1);
-    if (!zdcDigis->empty()) {
-      std::array<std::array<float, 24>, 3> chargefC{{}};
-      for (size_t i=0; i<24; i++) {
-        const auto& digi = static_cast<const QIE10DataFrame>((*zdcDigis)[i]);
-        for (int j=1; j<3; j++)
-          chargefC[j][i] = QWAna::ZDC2018::QIE10_regular_fC[digi[j].adc()][digi[j].capid()];
-      }
-      // Very preliminary calibration
-      float sumcEMP(0), sumcEMN(0), sumcHDP(0), sumcHDN(0);
-      // 2023 EM: idet = 0-5 and 12-16
-      for (size_t im=0; im<5; im++) {
-        const auto& ip = im + 12;
-        sumcEMN += (chargefC[2][im] - chargefC[1][im]);
-        sumcEMP += (chargefC[2][ip] - chargefC[1][ip]);
-      }
-      // 2023 HAD: idet = 8-11 and 20-23
-      for (size_t im=8; im<12; im++) {
-        const auto& ip = im + 12;
-        sumcHDN += (chargefC[2][im] - chargefC[1][im]);
-        sumcHDP += (chargefC[2][ip] - chargefC[1][ip]);
-      }
-      ZDCMinus = (sumcEMN * 0.1 + sumcHDN) * 0.5031;
-      ZDCPlus  = (sumcEMP * 0.1 + sumcHDP) * 0.9397;
+    for (const auto& rh : *zdcRecHits) {
+      HcalZDCDetId zdcid(rh.id());
+      if ((zdcid.section() == 1 && zdcid.channel() <= 5) || zdcid.section() == 2)
+        (zdcid.zside() < 0 ? ZDCMinus : ZDCPlus) += rh.energy();
     }
     eventInfo_.add("ZDCMinus", ZDCMinus);
     eventInfo_.add("ZDCPlus",  ZDCPlus);
@@ -1260,7 +1240,8 @@ ParticleAnalyzer::fillTrackInfo(const pat::GenericParticle& cand, const UInt_t& 
 
   // dEdx information
   if (addInfo_.at("dEdxs")) {
-    for (const auto& input : dedxInfo_) {
+    for (const auto& tag : dedxInfo_) {
+      const auto& input = tag.instance()!="" ? tag.instance() : tag.label();
       std::string dedxName = "dEdx_" + input;
       std::replace(dedxName.begin(), dedxName.end(), ':', '_');
       info.add(dedxName, getFloat(cand, "dEdx_"+input));
@@ -2195,9 +2176,9 @@ ParticleAnalyzer::loadConfiguration(const edm::ParameterSet& config, const edm::
     addInfo_["track"] = (sid>=Token::Track && sid<=Token::Muon);
   }
 
-  if (!addInfo_["dEdxs"] && config.existsAs<std::vector<std::string>>("dEdxInputs"))
+  if (!addInfo_["dEdxs"] && config.existsAs<std::vector<edm::InputTag>>("dEdxInputs"))
   {
-    dedxInfo_ = config.getParameter<std::vector<std::string> >("dEdxInputs");
+    dedxInfo_ = config.getParameter<std::vector<edm::InputTag> >("dEdxInputs");
     addInfo_["dEdxs"] = dedxInfo_.size();
   }
 

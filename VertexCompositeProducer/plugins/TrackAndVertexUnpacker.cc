@@ -4,6 +4,7 @@
 #include "DataFormats/VertexReco/interface/VertexFwd.h"
 #include "DataFormats/PatCandidates/interface/PackedCandidate.h"
 #include "DataFormats/Candidate/interface/VertexCompositePtrCandidate.h"
+#include "DataFormats/TrackReco/interface/DeDxData.h"
 
 namespace pat {
 
@@ -17,12 +18,15 @@ namespace pat {
           primaryVertexToken_(consumes<reco::VertexCollection>(iConfig.getParameter<edm::InputTag>("primaryVertices"))),
           secondaryVertexToken_(consumes<reco::VertexCompositePtrCandidateCollection>(
               iConfig.getParameter<edm::InputTag>("secondaryVertices"))),
+          dedxEstimatorsTokens_(getTokenMs<edm::ValueMap<reco::DeDxData>>(iConfig.getParameter<std::vector<edm::InputTag>>("dedxEstimators"))),
           recoverTracks_(iConfig.getParameter<bool>("recoverTracks")) {
       produces<reco::TrackCollection>();
       produces<reco::VertexCollection>();
       produces<reco::VertexCollection>("secondary");
       produces<edm::Association<reco::TrackCollection> >();
       produces<std::vector<edm::Ptr<pat::PackedCandidate> > >();
+      for (const auto& d : dedxEstimatorsTokens_)
+        produces<edm::ValueMap<reco::DeDxData>>(d.first);
     };
     ~TrackAndVertexUnpacker() override{};
 
@@ -38,11 +42,19 @@ namespace pat {
         tokens[i] = consumes<T>(v[i]);
       return tokens;
     };
+    template <class T>
+    std::map<std::string, edm::EDGetTokenT<T>> getTokenMs(const std::vector<edm::InputTag>& v) {
+      std::map<std::string, edm::EDGetTokenT<T>> tokens;
+      for (const auto& tag : v)
+        tokens.emplace(tag.instance(), consumes<T>(tag));
+      return tokens;
+    };
 
     const std::vector<edm::EDGetTokenT<pat::PackedCandidateCollection> > packedCandidateTokens_;
     const std::vector<edm::EDGetTokenT<edm::ValueMap<float> > > packedCandidateNormChi2MapTokens_;
     const edm::EDGetTokenT<reco::VertexCollection> primaryVertexToken_;
     const edm::EDGetTokenT<reco::VertexCompositePtrCandidateCollection> secondaryVertexToken_;
+    const std::map<std::string, edm::EDGetTokenT<edm::ValueMap<reco::DeDxData>>> dedxEstimatorsTokens_;
     const bool recoverTracks_;
   };
 
@@ -62,6 +74,7 @@ void pat::TrackAndVertexUnpacker::produce(edm::StreamID, edm::Event& iEvent, con
   std::map<size_t, std::vector<int> > pcAssoc;
   std::map<size_t, std::vector<size_t> > pvAssoc;
   std::map<reco::CandidatePtr, size_t> trackKeys;
+  std::map<size_t, pat::PackedCandidateRef> pcRef;
   for (size_t i = 0; i < packedCandidates.size(); i++) {
     const auto& cands = packedCandidates[i];
     const auto& normChi2Map = iEvent.getHandle(packedCandidateNormChi2MapTokens_[i]);
@@ -137,6 +150,7 @@ void pat::TrackAndVertexUnpacker::produce(edm::StreamID, edm::Event& iEvent, con
       trackKeys[candRef] = iT;
       pcAssoc[i][iC] = iT;
       outPCands->emplace_back(cands.id(), &cand, iC);
+      pcRef[iT] = pat::PackedCandidateRef(cands, iC);
     }
   }
   const auto& outTracksHandle = iEvent.put(std::move(outTracks));
@@ -179,8 +193,18 @@ void pat::TrackAndVertexUnpacker::produce(edm::StreamID, edm::Event& iEvent, con
   pc2track_filler.fill();
   iEvent.put(std::move(assoc_pc2track));
 
-  // create output association track -> packed candidate
-  const auto& outPCandsHandle = iEvent.put(std::move(outPCands));
+  // rekey dEdx estimators
+  for (const auto& d : dedxEstimatorsTokens_) {
+    const auto& dedxEstimators = iEvent.get(d.second);
+    auto trackDeDxValueMap = std::make_unique<edm::ValueMap<reco::DeDxData>>();
+    edm::ValueMap<reco::DeDxData>::Filler filler(*trackDeDxValueMap);
+    std::vector<reco::DeDxData> dedxEstimate(outTracksHandle->size());
+    for (size_t iT = 0; iT < dedxEstimate.size(); iT++)
+      dedxEstimate[iT] = dedxEstimators[pcRef[iT]];
+    filler.insert(outTracksHandle, dedxEstimate.begin(), dedxEstimate.end());
+    filler.fill();
+    iEvent.put(std::move(trackDeDxValueMap), d.first);
+  }
 }
 
 // ------------ method fills 'descriptions' with the allowed parameters for the module  ------------
@@ -198,7 +222,8 @@ void pat::TrackAndVertexUnpacker::fillDescriptions(edm::ConfigurationDescription
       ->setComment("primary vertex collection");
   desc.add<edm::InputTag>("secondaryVertices", edm::InputTag("slimmedSecondaryVertices"))
       ->setComment("secondary vertex collection");
-  desc.add<bool>("recoverTracks", true)->setComment("recover tracks");
+  desc.add<std::vector<edm::InputTag>>("dedxEstimators", {edm::InputTag("dedxEstimator:dedxAllLikelihood")});
+  desc.add<bool>("recoverTracks", false)->setComment("recover tracks");
   descriptions.add("unpackedTracksAndVertices", desc);
 }
 
