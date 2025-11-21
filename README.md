@@ -3,6 +3,7 @@
 Example of setting up and running gamma+gamma to dikaon tree
 
 cmsrel CMSSW_15_1_0_patch3
+
 cd CMSSW_15_1_0_patch3/src
 
 cmsenv
