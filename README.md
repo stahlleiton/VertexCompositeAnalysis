@@ -8,9 +8,9 @@ cd CMSSW_15_1_0_patch3/src
 
 cmsenv
 
-git clone -b ParticleFitter_15_1_X git@github.com:stahlleiton/VertexCompositeAnalysis.git
-
 git cms-addpkg DataFormats/PatCandidates ; git fetch git@github.com:stahlleiton/cmssw.git ParticleAnalyzer_CMSSW_15_1_X ; git cherry-pick ce0e4ae41f60f84dc814aa94ff39e89419da18ef
+
+git clone -b ParticleFitter_15_1_X git@github.com:stahlleiton/VertexCompositeAnalysis.git
 
 scram b -j8
 
