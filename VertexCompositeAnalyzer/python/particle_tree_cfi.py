@@ -40,6 +40,8 @@ particleAna = cms.EDAnalyzer('ParticleAnalyzer',
   centralityBin = cms.untracked.InputTag("centralityBin","HFtowers"),
   centrality    = cms.untracked.InputTag("hiCentrality"),
   eventPlane    = cms.untracked.InputTag("hiEvtPlaneFlat"),
+  recoTracks    = cms.untracked.InputTag("generalTracks"),
+  pfCandidates  = cms.untracked.InputTag("particleFlow"),
 
   # luminosity information
   lumiInfo    = cms.untracked.InputTag("lumiInfo", "brilcalc"),

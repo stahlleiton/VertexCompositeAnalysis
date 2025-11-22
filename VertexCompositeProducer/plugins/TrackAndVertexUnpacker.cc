@@ -200,7 +200,8 @@ void pat::TrackAndVertexUnpacker::produce(edm::StreamID, edm::Event& iEvent, con
     edm::ValueMap<reco::DeDxData>::Filler filler(*trackDeDxValueMap);
     std::vector<reco::DeDxData> dedxEstimate(outTracksHandle->size());
     for (size_t iT = 0; iT < dedxEstimate.size(); iT++)
-      dedxEstimate[iT] = dedxEstimators[pcRef[iT]];
+      if (dedxEstimators.contains(pcRef[iT].id()))
+        dedxEstimate[iT] = dedxEstimators[pcRef[iT]];
     filler.insert(outTracksHandle, dedxEstimate.begin(), dedxEstimate.end());
     filler.fill();
     iEvent.put(std::move(trackDeDxValueMap), d.first);

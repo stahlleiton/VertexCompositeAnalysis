@@ -180,7 +180,7 @@ private:
   const edm::EDGetTokenT<edm::ValueMap<int> > tok_nTracksVMap_;
   const edm::EDGetTokenT<reco::TrackCollection> tok_trackSrc_;
   const edm::EDGetTokenT<edm::SortedCollection<ZDCRecHit> > tok_zdcRecHitSrc_;
-  const edm::EDGetTokenT<reco::PFCandidateCollection> tok_pfCandSrc_;
+  const edm::EDGetTokenT<edm::View<reco::Candidate> > tok_pfCandSrc_;
   const edm::EDGetTokenT<CaloTowerCollection> tok_towerSrc_;
   const edm::EDGetTokenT<TrackingParticleCollection> tok_simParticle_;
 
@@ -253,7 +253,7 @@ ParticleAnalyzer::ParticleAnalyzer(const edm::ParameterSet& iConfig) :
   tok_nTracksVMap_(consumes<edm::ValueMap<int> >(iConfig.getUntrackedParameter<edm::InputTag>("nTracksVMap", edm::InputTag()))),
   tok_trackSrc_(consumes<reco::TrackCollection>(iConfig.getUntrackedParameter<edm::InputTag>("recoTracks", edm::InputTag("generalTracks")))),
   tok_zdcRecHitSrc_(consumes<edm::SortedCollection<ZDCRecHit> >(iConfig.getUntrackedParameter<edm::InputTag>("zdcRecHits", edm::InputTag("zdcreco")))),
-  tok_pfCandSrc_(consumes<reco::PFCandidateCollection>(iConfig.getUntrackedParameter<edm::InputTag>("pfCandidates", edm::InputTag("particleFlow")))),
+  tok_pfCandSrc_(consumes<edm::View<reco::Candidate> >(iConfig.getUntrackedParameter<edm::InputTag>("pfCandidates", edm::InputTag("particleFlow")))),
   tok_towerSrc_(consumes<CaloTowerCollection>(iConfig.getUntrackedParameter<edm::InputTag>("towers", edm::InputTag("towerMaker")))),
   tok_simParticle_(consumes<TrackingParticleCollection>(iConfig.getUntrackedParameter<edm::InputTag>("towers", edm::InputTag("mix:MergedTrackTruth")))),
   triggerInfo_(iConfig.getUntrackedParameter<std::vector<edm::ParameterSet> >("triggerInfo")),
@@ -742,7 +742,7 @@ ParticleAnalyzer::fillEventInfo(const edm::Event& iEvent)
   {
     float PFHFmaxEPlus(-1), PFHFmaxEMinus(-1), PFHFsumETPlus(0), PFHFsumETMinus(0);
     for (const auto& pf : *pfCandidates) {
-      if (pf.particleId() < 6) continue;
+      if (pf.pdgId() != 1 && pf.pdgId() != 2) continue;
       (pf.eta() > 0 ? PFHFsumETPlus : PFHFsumETMinus) += pf.pt();
       const auto aeta = std::abs(pf.eta());
       if (aeta < 3.0 || aeta > 6.0) continue;

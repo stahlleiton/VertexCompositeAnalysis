@@ -29,6 +29,8 @@ process.GlobalTag.globaltag = cms.string('151X_dataRun3_Prompt_v1')
 
 #* Set ZDC information
 process.load('VertexCompositeAnalysis.VertexCompositeProducer.ZDC2025_cfg')
+process.load("RecoHI.HiCentralityAlgos.CentralityBin_cfi")
+process.cent_seq = cms.Sequence(process.centralityBin * process.zdcreco)
 
 #* Add the Particle producer
 from VertexCompositeAnalysis.VertexCompositeProducer.generalParticles_cff import generalParticles
@@ -96,7 +98,7 @@ process.eventFilter_HM = cms.Sequence(
 process.eventFilter_HM_step = cms.Path( process.eventFilter_HM )
 
 # Define the analysis steps
-process.diKa_rereco_step = cms.Path(process.eventFilter_HM * process.hfPosFilterNTh10_seq * process.hfNegFilterNTh10_seq * process.diKa * process.oneDiKa * process.zdcreco)
+process.diKa_rereco_step = cms.Path(process.eventFilter_HM * process.hfPosFilterNTh10_seq * process.hfNegFilterNTh10_seq * process.diKa * process.oneDiKa * process.cent_seq)
 
 ## Adding the VertexComposite tree ################################################################################################
 
