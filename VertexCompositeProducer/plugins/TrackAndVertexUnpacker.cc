@@ -195,13 +195,14 @@ void pat::TrackAndVertexUnpacker::produce(edm::StreamID, edm::Event& iEvent, con
 
   // rekey dEdx estimators
   for (const auto& d : dedxEstimatorsTokens_) {
-    const auto& dedxEstimators = iEvent.get(d.second);
+    const auto& dedxEstimators = iEvent.getHandle(d.second);
     auto trackDeDxValueMap = std::make_unique<edm::ValueMap<reco::DeDxData>>();
     edm::ValueMap<reco::DeDxData>::Filler filler(*trackDeDxValueMap);
     std::vector<reco::DeDxData> dedxEstimate(outTracksHandle->size());
-    for (size_t iT = 0; iT < dedxEstimate.size(); iT++)
-      if (dedxEstimators.contains(pcRef[iT].id()))
-        dedxEstimate[iT] = dedxEstimators[pcRef[iT]];
+    if (dedxEstimators.isValid())
+      for (size_t iT = 0; iT < dedxEstimate.size(); iT++)
+        if (dedxEstimators->contains(pcRef[iT].id()))
+          dedxEstimate[iT] = (*dedxEstimators)[pcRef[iT]];
     filler.insert(outTracksHandle, dedxEstimate.begin(), dedxEstimate.end());
     filler.fill();
     iEvent.put(std::move(trackDeDxValueMap), d.first);
@@ -223,7 +224,7 @@ void pat::TrackAndVertexUnpacker::fillDescriptions(edm::ConfigurationDescription
       ->setComment("primary vertex collection");
   desc.add<edm::InputTag>("secondaryVertices", edm::InputTag("slimmedSecondaryVertices"))
       ->setComment("secondary vertex collection");
-  desc.add<std::vector<edm::InputTag>>("dedxEstimators", {edm::InputTag("dedxEstimator:dedxAllLikelihood")});
+  desc.add<std::vector<edm::InputTag>>("dedxEstimators", {edm::InputTag("dedxEstimator:dedxAllLikelihood"), edm::InputTag("dedxEstimator:dedxPixelLikelihood"), edm::InputTag("dedxEstimator:dedxStripLikelihood"), edm::InputTag("dedxEstimator:dedxPixelHarmonic2")});
   desc.add<bool>("recoverTracks", false)->setComment("recover tracks");
   descriptions.add("unpackedTracksAndVertices", desc);
 }

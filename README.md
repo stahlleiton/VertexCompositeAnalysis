@@ -2,9 +2,9 @@
 
 Example of setting up and running gamma+gamma to dikaon tree
 
-cmsrel CMSSW_15_1_0_patch3
+cmsrel CMSSW_15_1_1
 
-cd CMSSW_15_1_0_patch3/src
+cd CMSSW_15_1_1/src
 
 cmsenv
 

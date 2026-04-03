@@ -34,6 +34,6 @@ generalParticles = cms.EDProducer("ParticleProducer",
     conversions = cms.InputTag(''),
     met = cms.InputTag(''),
     mva = cms.InputTag(''),
-    dEdxInputs = cms.VInputTag('dedxAllLikelihood'),
+    dEdxInputs = cms.VInputTag(''),
     recoToSimTrackMap = cms.InputTag(''),
 )

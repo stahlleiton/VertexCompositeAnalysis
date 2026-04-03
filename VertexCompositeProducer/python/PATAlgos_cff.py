@@ -172,7 +172,7 @@ def changeToMiniAOD(process):
     from Configuration.Applications.ConfigBuilder import MassReplaceInputTag
     process = MassReplaceInputTag(process,"offlinePrimaryVertices","unpackedTracksAndVertices")
     process = MassReplaceInputTag(process,"generalTracks","unpackedTracksAndVertices")
-    for dedx in ['dedxStripLikelihood','dedxPixelLikelihood','dedxAllLikelihood']:
+    for dedx in ['dedxStripLikelihood','dedxPixelLikelihood','dedxAllLikelihood', 'dedxPixelHarmonic2']:
         process = MassReplaceInputTag(process,dedx,"unpackedTracksAndVertices:"+dedx)
     process = MassReplaceInputTag(process,"particleFlow","packedPFCandidates")
     process = MassReplaceInputTag(process,"genParticles","prunedGenParticles")

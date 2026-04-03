@@ -726,7 +726,7 @@ ParticleAnalyzer::fillEventInfo(const edm::Event& iEvent)
   const auto& zdcRecHits = iEvent.getHandle(tok_zdcRecHitSrc_);
   if (zdcRecHits.isValid())
   {
-    float ZDCMinus(-1), ZDCPlus(-1);
+    float ZDCMinus(0), ZDCPlus(0);
     for (const auto& rh : *zdcRecHits) {
       HcalZDCDetId zdcid(rh.id());
       if ((zdcid.section() == 1 && zdcid.channel() <= 5) || zdcid.section() == 2)
