@@ -20,6 +20,7 @@
 #include "FWCore/Common/interface/TriggerNames.h"
 #include "FWCore/ParameterSet/interface/Registry.h"
 
+#include "DataFormats/HcalDigi/interface/HcalDigiCollections.h"
 #include "DataFormats/HcalRecHit/interface/HcalRecHitCollections.h"
 #include "DataFormats/BeamSpot/interface/BeamSpot.h"
 #include "DataFormats/VertexReco/interface/Vertex.h"
@@ -54,6 +55,7 @@
 #include "TrackingTools/TransientTrack/interface/TransientTrack.h"
 #include "TrackingTools/IPTools/interface/IPTools.h"
 #include "TrackingTools/PatternTools/interface/trackingParametersAtClosestApproachToBeamSpot.h"
+#include "VertexCompositeAnalysis/VertexCompositeAnalyzer/plugins/ZDCHardCodeHelper.h"
 #include "HepPDT/ParticleID.hh"
 
 #include "VertexCompositeAnalysis/VertexCompositeProducer/interface/ParticleFitter.h"
@@ -179,12 +181,14 @@ private:
   std::vector< edm::EDGetTokenT<LumiInfo> > tok_triggerLumiInfo_;
   const edm::EDGetTokenT<edm::ValueMap<int> > tok_nTracksVMap_;
   const edm::EDGetTokenT<reco::TrackCollection> tok_trackSrc_;
+  const edm::EDGetTokenT<QIE10DigiCollection> tok_zdcDigiSrc_;
   const edm::EDGetTokenT<edm::SortedCollection<ZDCRecHit> > tok_zdcRecHitSrc_;
   const edm::EDGetTokenT<edm::View<reco::Candidate> > tok_pfCandSrc_;
   const edm::EDGetTokenT<CaloTowerCollection> tok_towerSrc_;
   const edm::EDGetTokenT<TrackingParticleCollection> tok_simParticle_;
 
   // input data
+  const ZDCHardCodeHelper HardCodeZDC_;
   const std::vector<edm::ParameterSet> triggerInfo_, matchInfo_;
   const std::vector<std::string> eventFilters_;
   const std::string dataset_, selectEvents_;
@@ -252,6 +256,7 @@ ParticleAnalyzer::ParticleAnalyzer(const edm::ParameterSet& iConfig) :
   tok_lumiRecord_(consumes<OnlineLuminosityRecord>(iConfig.getUntrackedParameter<edm::InputTag>("lumiRecord", edm::InputTag("onlineMetaDataDigis")))),
   tok_nTracksVMap_(consumes<edm::ValueMap<int> >(iConfig.getUntrackedParameter<edm::InputTag>("nTracksVMap", edm::InputTag()))),
   tok_trackSrc_(consumes<reco::TrackCollection>(iConfig.getUntrackedParameter<edm::InputTag>("recoTracks", edm::InputTag("generalTracks")))),
+  tok_zdcDigiSrc_(consumes<QIE10DigiCollection>(iConfig.getUntrackedParameter<edm::InputTag>("zdcDigis", edm::InputTag("hcalDigis", "ZDC")))),
   tok_zdcRecHitSrc_(consumes<edm::SortedCollection<ZDCRecHit> >(iConfig.getUntrackedParameter<edm::InputTag>("zdcRecHits", edm::InputTag("zdcreco")))),
   tok_pfCandSrc_(consumes<edm::View<reco::Candidate> >(iConfig.getUntrackedParameter<edm::InputTag>("pfCandidates", edm::InputTag("particleFlow")))),
   tok_towerSrc_(consumes<CaloTowerCollection>(iConfig.getUntrackedParameter<edm::InputTag>("towers", edm::InputTag("towerMaker")))),
@@ -723,6 +728,7 @@ ParticleAnalyzer::fillEventInfo(const edm::Event& iEvent)
   }
 
   // fill ZDC information
+  const auto& zdcDigis = iEvent.getHandle(tok_zdcDigiSrc_);
   const auto& zdcRecHits = iEvent.getHandle(tok_zdcRecHitSrc_);
   if (zdcRecHits.isValid())
   {
@@ -734,6 +740,23 @@ ParticleAnalyzer::fillEventInfo(const edm::Event& iEvent)
     }
     eventInfo_.add("ZDCMinus", ZDCMinus);
     eventInfo_.add("ZDCPlus",  ZDCPlus);
+    eventInfo_.add("hasZDC", not zdcRecHits->empty());
+  }
+  else if (zdcDigis.isValid())
+  {
+    float ZDCMinus(0), ZDCPlus(0);
+    for (const auto& d : *zdcDigis) {
+      const auto digi = static_cast<const QIE10DataFrame>(d);
+      const auto chargefC1 = HardCodeZDC_.charge(digi[1].adc(), digi[1].capid());
+      const auto chargefC2 = HardCodeZDC_.charge(digi[2].adc(), digi[2].capid());
+      HcalZDCDetId zdcid(digi.id());
+      const auto factor = (zdcid.zside() < 0 ? 0.5031 : 0.9397) * (zdcid.section() == 1 ? 0.1 : 1.);
+      if (zdcid.section() == 1 || zdcid.section() == 2)
+        (zdcid.zside() < 0 ? ZDCMinus : ZDCPlus) += (chargefC2 - chargefC1) * factor;
+    }
+    eventInfo_.add("ZDCMinus", ZDCMinus);
+    eventInfo_.add("ZDCPlus",  ZDCPlus);
+    eventInfo_.add("hasZDC", not zdcDigis->empty());
   }
 
   // fill PF information
