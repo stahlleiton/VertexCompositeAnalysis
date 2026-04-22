@@ -98,6 +98,14 @@ def changeToMiniAOD(process):
         process.load('VertexCompositeAnalysis.VertexCompositeProducer.unpackedMuons_cfi')
         process.eventFilter_HM.insert(1, process.unpackedMuons)
 
+    if hasattr(process, "muonMatch"):
+        from MuonAnalysis.MuonAssociators.patMuonsWithTrigger_cff import changeRecoMuonInput
+        changeRecoMuonInput(process, recoMuonCollectionTag=cms.InputTag("unpackedMuonsWithGenMatch"), oldRecoMuonCollectionTag=cms.InputTag("unpackedMuons"))
+        process.load('VertexCompositeAnalysis.VertexCompositeProducer.unpackedMuonsWithGenMatch_cfi')
+        process.patMuonsWithTriggerSequence.insert(1, process.unpackedMuonsWithGenMatch)
+        process.genMuons.src = "prunedGenParticles"
+        process.muonMatch.src = "unpackedMuons"
+
     if hasattr(process, "output_HM"):
         process.output_HM.outputCommands.append('keep *Vert*_unpackedTracksAndVertices_*_*')
         process.output_HM.outputCommands.append('keep patMuons_unpackedMuons_*_*')
