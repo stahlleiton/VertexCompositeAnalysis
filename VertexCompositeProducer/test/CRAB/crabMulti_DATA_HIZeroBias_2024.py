@@ -6,12 +6,12 @@ from http.client import HTTPException
 config = config()
 config.section_('General')
 date = '2026_04_10'
-config.General.workArea = 'crab_projects/'+date
+config.General.workArea = 'crab_projects/'+date+'/HIZeroBias/'
 config.General.transferOutputs = True
 config.General.transferLogs = False
 config.section_('JobType')
 config.JobType.pluginName = 'Analysis'
-config.JobType.psetName = '../VCTree_PbPb2024_HIEmptyBX_UPCReco_cfg.py'
+config.JobType.psetName = '../VCTree_PbPb2024_HIZeroBias_UPCReco_cfg.py'
 config.JobType.maxMemoryMB = 2500
 config.JobType.maxJobRuntimeMin = 720
 config.JobType.numCores = 1
@@ -35,17 +35,18 @@ config.Data.splitting = 'LumiBased'
 config.Data.unitsPerJob = 50
 config.Data.inputDBS = 'global'
 
-## Submit the HIEmptyBX PDs
+## Submit the HIZeroBias PDs
 config.Data.lumiMask = '/eos/user/c/cmsdqm/www/CAF/certification/Collisions24HI/Cert_Collisions2024_HI_387853_388784_Muon.json'
-config.General.requestName = f'ParticleAnalyzer_HIEmptyBX_HIRun2024A_'+date
-config.Data.inputDataset = f'/HIEmptyBX/HIRun2024A-PromptReco-v1/MINIAOD'
-config.Data.outputDatasetTag = config.General.requestName
-submit(config = config, dryrun=False)
-config.General.requestName = f'ParticleAnalyzer_HIEmptyBX_HIRun2024B_v1_'+date
-config.Data.inputDataset = f'/HIEmptyBX/HIRun2024B-PromptReco-v1/MINIAOD'
-config.Data.outputDatasetTag = config.General.requestName
-submit(config = config, dryrun=False)
-config.General.requestName = f'ParticleAnalyzer_HIEmptyBX_HIRun2024B_v2_'+date
-config.Data.inputDataset = f'/HIEmptyBX/HIRun2024B-PromptReco-v2/MINIAOD'
-config.Data.outputDatasetTag = config.General.requestName
-submit(config = config, dryrun=False)
+for i in range(0, 3, 1):
+    config.General.requestName = f'ParticleAnalyzer_HIZeroBias{i}_HIRun2024A_'+date
+    config.Data.inputDataset = f'/HIZeroBias{i}/HIRun2024A-PromptReco-v1/MINIAOD'
+    config.Data.outputDatasetTag = config.General.requestName
+    submit(config = config, dryrun=False)
+    config.General.requestName = f'ParticleAnalyzer_HIZeroBias{i}_HIRun2024B_v1_'+date
+    config.Data.inputDataset = f'/HIZeroBias{i}/HIRun2024B-PromptReco-v1/MINIAOD'
+    config.Data.outputDatasetTag = config.General.requestName
+    submit(config = config, dryrun=False)
+    config.General.requestName = f'ParticleAnalyzer_HIZeroBias{i}_HIRun2024B_v2_'+date
+    config.Data.inputDataset = f'/HIZeroBias{i}/HIRun2024B-PromptReco-v2/MINIAOD'
+    config.Data.outputDatasetTag = config.General.requestName
+    submit(config = config, dryrun=False)

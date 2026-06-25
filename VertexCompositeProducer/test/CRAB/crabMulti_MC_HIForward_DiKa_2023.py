@@ -16,7 +16,7 @@ config.JobType.maxMemoryMB = 2500
 config.JobType.maxJobRuntimeMin = 720
 config.JobType.numCores = 1
 config.section_('Data')
-config.Data.outLFNDirBase = f'/store/group/phys_heavyions/{REPLACE_WITH_USERNAME}/CERN/PbPb2023/ParticleAnalyzer/' + date+'/MC/'
+config.Data.outLFNDirBase = '/store/group/phys_heavyions/anstahll/CERN/PbPb2023/ParticleAnalyzer/' + date+'/MC/'
 config.Data.publication = False
 config.section_('Site')
 config.Site.storageSite = 'T2_CH_CERN'
@@ -36,14 +36,14 @@ config.JobType.maxMemoryMB = 2500
 config.JobType.maxJobRuntimeMin = 720
 
 dataMap = {}
-dataMap["coh_phi_dika_STARLIGHT"] = "/STARLIGHT_5p36TeV_2023Run3/{REPLACE_WITH_USERNAME}-coh_phi_dika_STARLIGHT_5p36TeV_2023Run3_RECO_2026_04_14-5d2f75b4b1f4ab91f2b93e775a64a44a/USER"
-dataMap["coh_phi_dika_extnuclearpar_STARLIGHT"] = "/STARLIGHT_5p36TeV_2023Run3/{REPLACE_WITH_USERNAME}-coh_phi_dika_extnuclearpar_STARLIGHT_5p36TeV_2023Run3_RECO_2026_04_14-5d2f75b4b1f4ab91f2b93e775a64a44a/USER"
-dataMap["coh_phi_dika_nuclearpar_STARLIGHT"] = "/STARLIGHT_5p36TeV_2023Run3/{REPLACE_WITH_USERNAME}-coh_phi_dika_nuclearpar_STARLIGHT_5p36TeV_2023Run3_RECO_2026_04_14-5d2f75b4b1f4ab91f2b93e775a64a44a/USER"
-dataMap["coh_phi_direct_dika_STARLIGHT"] = "/STARLIGHT_5p36TeV_2023Run3/{REPLACE_WITH_USERNAME}-coh_phi_direct_dika_STARLIGHT_5p36TeV_2023Run3_RECO_2026_04_14-5d2f75b4b1f4ab91f2b93e775a64a44a/USER"
-dataMap["coh_rho_dipi_STARLIGHT"] = "/STARLIGHT_5p36TeV_2023Run3/{REPLACE_WITH_USERNAME}-coh_rho_dipi_STARLIGHT_5p36TeV_2023Run3_RECO_2026_04_14-5d2f75b4b1f4ab91f2b93e775a64a44a/USER"
-dataMap["coh_rho_direct_dipi_STARLIGHT"] = "/STARLIGHT_5p36TeV_2023Run3/{REPLACE_WITH_USERNAME}-coh_rho_direct_dipi_STARLIGHT_5p36TeV_2023Run3_RECO_2026_04_14-5d2f75b4b1f4ab91f2b93e775a64a44a/USER"
-dataMap["incoh_phi_dika_STARLIGHT"] = "/STARLIGHT_5p36TeV_2023Run3/{REPLACE_WITH_USERNAME}-incoh_phi_dika_STARLIGHT_5p36TeV_2023Run3_RECO_2026_04_14-5d2f75b4b1f4ab91f2b93e775a64a44a/USER"
-dataMap["incoh_rho_dipi_STARLIGHT"] = "/STARLIGHT_5p36TeV_2023Run3/{REPLACE_WITH_USERNAME}-incoh_rho_dipi_STARLIGHT_5p36TeV_2023Run3_RECO_2026_04_14-5d2f75b4b1f4ab91f2b93e775a64a44a/USER"
+dataMap["coh_phi_dika_STARLIGHT"] = "/STARLIGHT_5p36TeV_2023Run3/anstahll-coh_phi_dika_STARLIGHT_5p36TeV_2023Run3_RECO_2026_04_14-5d2f75b4b1f4ab91f2b93e775a64a44a/USER"
+dataMap["coh_phi_dika_extnuclearpar_STARLIGHT"] = "/STARLIGHT_5p36TeV_2023Run3/anstahll-coh_phi_dika_extnuclearpar_STARLIGHT_5p36TeV_2023Run3_RECO_2026_04_14-5d2f75b4b1f4ab91f2b93e775a64a44a/USER"
+dataMap["coh_phi_dika_nuclearpar_STARLIGHT"] = "/STARLIGHT_5p36TeV_2023Run3/anstahll-coh_phi_dika_nuclearpar_STARLIGHT_5p36TeV_2023Run3_RECO_2026_04_14-5d2f75b4b1f4ab91f2b93e775a64a44a/USER"
+dataMap["coh_phi_direct_dika_STARLIGHT"] = "/STARLIGHT_5p36TeV_2023Run3/anstahll-coh_phi_direct_dika_STARLIGHT_5p36TeV_2023Run3_RECO_2026_04_14-5d2f75b4b1f4ab91f2b93e775a64a44a/USER"
+dataMap["coh_rho_dipi_STARLIGHT"] = "/STARLIGHT_5p36TeV_2023Run3/anstahll-coh_rho_dipi_STARLIGHT_5p36TeV_2023Run3_RECO_2026_04_14-5d2f75b4b1f4ab91f2b93e775a64a44a/USER"
+dataMap["coh_rho_direct_dipi_STARLIGHT"] = "/STARLIGHT_5p36TeV_2023Run3/anstahll-coh_rho_direct_dipi_STARLIGHT_5p36TeV_2023Run3_RECO_2026_04_14-5d2f75b4b1f4ab91f2b93e775a64a44a/USER"
+dataMap["incoh_phi_dika_STARLIGHT"] = "/STARLIGHT_5p36TeV_2023Run3/anstahll-incoh_phi_dika_STARLIGHT_5p36TeV_2023Run3_RECO_2026_04_14-5d2f75b4b1f4ab91f2b93e775a64a44a/USER"
+dataMap["incoh_rho_dipi_STARLIGHT"] = "/STARLIGHT_5p36TeV_2023Run3/anstahll-incoh_rho_dipi_STARLIGHT_5p36TeV_2023Run3_RECO_2026_04_14-5d2f75b4b1f4ab91f2b93e775a64a44a/USER"
 
 ## Submit PDs
 for key, val in dataMap.items():

@@ -16,7 +16,7 @@ config.JobType.maxMemoryMB = 2500
 config.JobType.maxJobRuntimeMin = 720
 config.JobType.numCores = 1
 config.section_('Data')
-config.Data.outLFNDirBase = f'/store/group/phys_heavyions/{REPLACE_WITH_USERNAME}/CERN/PbPb2024/ParticleAnalyzer/' + date+'/DATA/'
+config.Data.outLFNDirBase = '/store/group/phys_heavyions/anstahll/CERN/PbPb2024/ParticleAnalyzer/' + date+'/DATA/'
 config.Data.publication = False
 config.section_('Site')
 config.Site.storageSite = 'T2_CH_CERN'
